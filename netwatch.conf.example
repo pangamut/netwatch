@@ -1,0 +1,17 @@
+# netwatch.conf — configuration for netwatch.py
+# Ablage z.B.: /etc/netwatch/netwatch.conf
+# permissions: chmod 600 (contains password)
+
+[scan]
+subnet    = 192.168.172.0/24
+# optional: NIC explicit configuration
+# interface = eth0
+
+[mail]
+smtp_host     = smtp.gmail.com
+smtp_port     = 587
+smtp_user     = your@gmail.com
+smtp_pass     = xxxx-xxxx-xxxx-xxxx   # Gmail: App-Password
+mail_from     = your@gmail.com
+mail_to       = your@gmail.com
+subject_prefix = [netwatch]
