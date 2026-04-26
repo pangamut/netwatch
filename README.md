@@ -40,8 +40,8 @@ sudo chmod 600 /etc/netwatch/netwatch.conf
 
 ```ini
 [scan]
-subnet    = 192.168.172.0/24
-interface = eth0
+subnet    = 10.1.0.0/20
+interface = end0
 # oui_file = /usr/share/arp-scan/ieee-oui.txt
 
 [mail]
@@ -103,10 +103,10 @@ Stored at `/var/lib/netwatch/known_devices.json`:
 
 ```json
 {
-  "ec:e3:34:ab:bc:33": {
-    "ipv4": "192.168.172.33",
+  "ec:e3:34:eb:9c:63": {
+    "ipv4": "10.1.3.33",
     "vendor": "Espressif Inc.",
-    "hostname": "shellypro3em-ece334abbc33,
+    "hostname": "shellypro3em-ece334eb9c60",
     "ipv6_link_local": [],
     "ipv6_global": [],
     "first_seen": "2026-04-25T13:47:31",
@@ -139,4 +139,73 @@ sudo setcap cap_net_raw+ep $(which arp-scan)
 
 This allows netwatch to run as an unprivileged user.
 
+## Web UI
 
+A single-page PHP interface for browsing devices, sorting by any column, filtering, triggering scans, and editing labels.
+
+### Requirements
+
+```bash
+# nginx + PHP-FPM (8.x)
+sudo apt install nginx php-fpm
+
+# arp-scan needs raw socket capability (no sudo required)
+sudo setcap cap_net_raw+ep /usr/sbin/arp-scan
+```
+
+### Installation
+
+```bash
+sudo mkdir -p /var/www/netwatch
+sudo cp netwatch.php /var/www/netwatch/index.php
+
+# Config readable by www-data
+sudo chown root:www-data /etc/netwatch/netwatch.conf
+sudo chmod 640 /etc/netwatch/netwatch.conf
+
+# DB writable by www-data
+sudo chown -R www-data:www-data /var/lib/netwatch
+```
+
+### nginx config
+
+`/etc/nginx/sites-available/netwatch`:
+
+```nginx
+server {
+    listen 8080;
+    root /var/www/netwatch;
+    index index.php;
+
+    location ~ \.php$ {
+        include fastcgi_params;
+        fastcgi_pass unix:/run/php/php-fpm.sock;
+        fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+    }
+}
+```
+
+```bash
+sudo ln -s /etc/nginx/sites-available/netwatch /etc/nginx/sites-enabled/
+sudo nginx -t && sudo systemctl reload nginx
+```
+
+Access at `http://<raspi-ip>:8080`
+
+### Features
+
+- Sortable columns (click header) — default: first seen, newest first
+- Live filter across all fields
+- Inline label editing — click any label cell, type, blur to save
+- **Scan now**: runs a full ARP + NDP scan
+- **Fritz!Box lookup**: refreshes hostnames from Fritz!Box TR-064
+- **Send host list**: triggers a host list mail
+
+### Note on sudo
+
+No sudo required. `arp-scan` gets raw socket access via Linux capabilities (`cap_net_raw`). PHP-FPM runs as `www-data` and calls `netwatch.py` directly.
+
+## Related projects
+
+- [marstek-cli](https://github.com/pangamut/marstek-cli) — CLI for Marstek Venus E home battery
+- [mvpic](https://github.com/pangamut/mvpic) — photo organizer with EXIF-based clustering

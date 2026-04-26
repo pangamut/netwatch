@@ -79,8 +79,8 @@ def scan_ipv4(subnet: str, interface: str | None, oui_file: str = "/usr/share/ar
 def probe_ipv6_multicast(interface: str) -> None:
     """
     Sends multicast ping to ff02::1%<iface> so all IPv6 hosts
-    in local segment will answer and end up in NDP cache.
-    errors are ignored.
+    im lokalen Segment antworten und im NDP-Cache landen.
+    Fehler werden ignoriert.
     """
     try:
         subprocess.run(
@@ -366,7 +366,7 @@ def fritzbox_get_hosts(base_url: str, password: str = "", verbose: bool = False)
             vprint(f"Error on {action}: {e}")
             return None
 
-    # number of hosts
+    # Anzahl der Hosts
     vprint("Querying host count ...")
     root = soap_call("GetHostNumberOfEntries")
     if root is None:
@@ -493,7 +493,7 @@ def send_hostlist_mail(cfg: configparser.ConfigParser, known: dict, verbose: boo
         if gua:
             lines.append(f"       IPv6 GUA: {', '.join(gua)}")
 
-    lines += ["", "---", "netwatch runs on your Raspberry Pi."]
+    lines += ["", "---", "netwatch läuft auf deinem Raspberry Pi."]
     body = "\n".join(lines)
 
     msg = MIMEText(body, "plain", "utf-8")
@@ -545,7 +545,7 @@ def main() -> None:
     db_path.parent.mkdir(parents=True, exist_ok=True)
 
     cfg    = load_config(config_path)
-    subnet = cfg["scan"].get("subnet", "192.168.172.0/24").split("#")[0].strip()
+    subnet = cfg["scan"].get("subnet", "10.1.0.0/20").split("#")[0].strip()
     iface  = cfg["scan"].get("interface") or None
     if iface:
         iface = iface.split("#")[0].strip() or None  # Inline-Kommentare tolerieren
@@ -593,7 +593,10 @@ def main() -> None:
                       f"{data['vendor'] or '(unbekannt)'}{hostname_hint}")
         else:
             # Known device: update IPs, no alert
-            known[mac]["last_seen"]       = now_str
+            # Only update last_seen if the device has a real IPv4 presence
+            # (pure NDP/STALE cache entries without IPv4 don't count as active)
+            if data["ipv4"]:
+                known[mac]["last_seen"] = now_str
             known[mac]["ipv4"]            = data["ipv4"]
             known[mac]["ipv6_link_local"] = data["ipv6_link_local"]
             known[mac]["ipv6_global"]     = data["ipv6_global"]
@@ -606,7 +609,7 @@ def main() -> None:
         print(f"[OK] Bootstrap: {len(known)} devices marked as known. No mail sent.")
         return
 
-    # register new devices
+    # Neue Geräte melden
     if new_devices:
         if args.dry_run:
             print(f"[DRY-RUN] Would send alert mail for {len(new_devices)} device(s).")
@@ -615,7 +618,7 @@ def main() -> None:
     else:
         print("  No new devices.")
 
-    # send full host list
+    # Komplette Hostliste senden (unabhängig von neuen Geräten)
     if args.sendhosts:
         if args.dry_run:
             print(f"[DRY-RUN] Would send host list mail ({len(known)} devices).")
