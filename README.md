@@ -205,7 +205,3 @@ Access at `http://<raspi-ip>:8080`
 
 No sudo required. `arp-scan` gets raw socket access via Linux capabilities (`cap_net_raw`). PHP-FPM runs as `www-data` and calls `netwatch.py` directly.
 
-## Related projects
-
-- [marstek-cli](https://github.com/pangamut/marstek-cli) — CLI for Marstek Venus E home battery
-- [mvpic](https://github.com/pangamut/mvpic) — photo organizer with EXIF-based clustering
